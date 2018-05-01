@@ -3,7 +3,6 @@
 <JUCERPROJECT name="Sample Player" projectType="guiapp" jucerVersion="5.3.1">
   <MAINGROUP id="Ks6ZV2" name="Sample Player">
     <GROUP id="{28813719-3FE8-2AF3-F53B-22E6814E09E1}" name="Source">
-      <FILE id="k9Fu7S" name="OverDrive.h" compile="0" resource="0" file="Source/OverDrive.h"/>
       <FILE id="lgAZqK" name="FlangerParameter.h" compile="0" resource="0"
             file="Source/FlangerParameter.h"/>
       <FILE id="kxoS4Y" name="FlangerProcessor.cpp" compile="1" resource="0"
@@ -13,12 +12,18 @@
       <FILE id="a0QNLC" name="FlangerEditor.cpp" compile="1" resource="0"
             file="Source/FlangerEditor.cpp"/>
       <FILE id="DeUdWi" name="FlangerEditor.h" compile="0" resource="0" file="Source/FlangerEditor.h"/>
+      <FILE id="L94qoQ" name="StringVibration.h" compile="0" resource="0"
+            file="Source/StringVibration.h"/>
       <FILE id="bCy43y" name="ErHuString.h" compile="0" resource="0" file="Source/ErHuString.h"/>
       <FILE id="TzG5ij" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
       <FILE id="aN64s4" name="MainComponent.cpp" compile="1" resource="0"
             file="Source/MainComponent.cpp"/>
       <FILE id="u5mNXQ" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
     </GROUP>
+    <FILE id="iFX9bq" name="PositionableMixerAudioSource.cpp" compile="1"
+          resource="0" file="Source/PositionableMixerAudioSource.cpp"/>
+    <FILE id="t0eopF" name="PositionableMixerAudioSource.h" compile="0"
+          resource="0" file="Source/PositionableMixerAudioSource.h"/>
   </MAINGROUP>
   <LIVE_SETTINGS>
     <WINDOWS/>

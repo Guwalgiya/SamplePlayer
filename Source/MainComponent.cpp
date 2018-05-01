@@ -6,7 +6,7 @@
 #include "FlangerEditor.h"
 #include <math.h>
 #include <experimental/filesystem>
-#include <iostream>
+
 class MainContentComponent : public  AudioAppComponent,
 							 public  ChangeListener,
 							 public  ToggleButton::Listener,
@@ -29,8 +29,8 @@ public:
 	int num_in_chann  = 0;
 	int num_out_chann = 2;
 	int cent_c_octave = 3;
-	float defualt_fs  = 44100.00;
-	
+	float defualt_fs  = 48000.00;
+
 
 	MainContentComponent() : lastInputIndex(0),
 		                     state(Stopped),
@@ -122,20 +122,11 @@ public:
 
 	~MainContentComponent()
 	{
-		
 		keyboardState.removeListener(this);
 		deviceManager.removeMidiInputCallback(MidiInput::getDevices()[midiInputList.getSelectedItemIndex()], this);
 		midiInputList.removeListener(this);
-		keyboardState.removeListener(this);
 		readerSource = nullptr;
 		delete readerSource;
-		bow_button.removeListener(this);
-		pluck_button.removeListener(this);
-		transportSource.removeChangeListener(this);
-		//transportSource.getNextAudioBlock
-		//transportSource.hasStreamFinished();
-		//transportSource.releaseResources();
-		flanger.removeListener(this);
 		shutdownAudio();
 	}
 
@@ -149,7 +140,7 @@ public:
 	//core function
 	void getNextAudioBlock(const AudioSourceChannelInfo& bufferToFill) override
 	{
-		if (readerSource.get() == nullptr)
+		if (readerSource == nullptr)
 		{
 			bufferToFill.clearActiveBufferRegion();
 			return;
@@ -269,18 +260,23 @@ private:
 			File file(path);
 			if (reader != nullptr)
 			{
-				if (instrument == "ErHu_Piano")
+				if (instrument == "String")
 				{
-					velocity = 0.0;
+					//depends on the playing velocity
+					float endPoint = std::floor(reader->lengthInSamples * (scaleSlider.getMaximum() - velocity) / scaleSlider.getMaximum());
+					int   play_length = (int)endPoint;
+					AudioSubsectionReader* subsectionReader = new AudioSubsectionReader(reader, 0, endPoint, true);
+					ScopedPointer<AudioFormatReaderSource> newSource = new AudioFormatReaderSource(subsectionReader, true);
+					transportSource.setSource(newSource, 0, nullptr, reader->sampleRate);
+					readerSource = newSource.release();
+				}
+				else
+				{
+					ScopedPointer<AudioFormatReaderSource> newSource = new AudioFormatReaderSource(reader, true);
+					transportSource.setSource(newSource, 0, nullptr, reader->sampleRate);
+					readerSource = newSource.release();
 				}
 
-				//depends on the playing velocity
-				float endPoint = std::floor(reader->lengthInSamples * (scaleSlider.getMaximum() - velocity) / scaleSlider.getMaximum());
-				int   play_length = (int)endPoint;
-				AudioSubsectionReader* subsectionReader = new AudioSubsectionReader(reader, 0, endPoint, true);
-				ScopedPointer<AudioFormatReaderSource> newSource = new AudioFormatReaderSource(subsectionReader, true);
-				transportSource.setSource(newSource, 0, nullptr, reader->sampleRate);
-				readerSource = newSource.release();
 				//play	
 				transportSource.start();
 			}
@@ -288,9 +284,8 @@ private:
 			{
 				logMessage("Impossible to play this note on an ErHu");
 			}
-			
 		}
-		else if (stateString_pluck == "ON")
+		else if (stateString_pluck == "ON" && !isAddingFromMidiInput)
 		{
 			//create path
 			String cwd = File::getCurrentWorkingDirectory().getParentDirectory().getParentDirectory().getFullPathName();
@@ -300,7 +295,7 @@ private:
 			//Prase File
 			AudioFormatReader* reader = formatManager.createReaderFor(path);
 			File file(path);
-			if (reader != nullptr) 
+			if (reader != nullptr)
 			{
 				ScopedPointer<AudioFormatReaderSource> newSource = new AudioFormatReaderSource(reader, true);
 				transportSource.setSource(newSource, 0, nullptr, reader->sampleRate);
@@ -311,14 +306,12 @@ private:
 			{
 				logMessage("Impossible to play this note on an ErHu");
 			}
-			//readerSource = nullptr;
 		}
 		else
 		{
 			logMessage("You Need to Pluck or Bow the ErHu");
 		}
 		logMessage("\n");
-
 	}
 
 	//=========================================================================================================================
@@ -486,16 +479,13 @@ private:
 	AudioTransportSource                   transportSource;
 	ScopedPointer<AudioFormatReaderSource> readerSource;
 	AudioFormatManager                     formatManager;
-	//ScopedPointer<AudioFormatReaderSource> newSource = new AudioFormatReaderSource(nullptr, true);
-	//std::unique_ptr<AudioFormatReaderSource> readerSource;
 
 	//Audio Effect Components
 	FlangerAudioProcessor processor;
 	Array<FlangerAudioProcessorEditor::SafePointer<FlangerAudioProcessorEditor>> window;
 	FlangerAudioProcessorEditor *flangerAudioProcessorEditor = new FlangerAudioProcessorEditor(processor);
-	JUCE_LEAK_DETECTOR(MainContentComponent);
 	//==============================================================================
-	//JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainContentComponent);
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainContentComponent);
 };
 
 // (This function is called by the app startup code to create our main component)

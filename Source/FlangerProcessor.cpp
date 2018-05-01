@@ -60,7 +60,7 @@ FlangerAudioProcessor::~FlangerAudioProcessor()
 
 //==============================================================================
 
-void FlangerAudioProcessor::prepareToPlay (double sampleRate, int )
+void FlangerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     const double smoothTime = 1e-3;
     paramDelay.reset (sampleRate, smoothTime);
@@ -87,7 +87,7 @@ void FlangerAudioProcessor::prepareToPlay (double sampleRate, int )
     delayWritePosition = 0;
     lfoPhase = 0.0f;
     inverseSampleRate = 1.0f / (float)sampleRate;
-    twoPi = (float)2.0f * M_PI;
+    twoPi = 2.0f * M_PI;
 }
 
 void FlangerAudioProcessor::releaseResources()

@@ -76,5 +76,5 @@ private:
 	const float maxAmplitude = 30.0f;
 	float       phase        = 0.0f;
 	Colour      colour;
-	JUCE_LEAK_DETECTOR(ErHuString);
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ErHuString)
 };

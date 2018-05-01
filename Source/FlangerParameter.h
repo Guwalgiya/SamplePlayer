@@ -49,7 +49,7 @@ public:
             setValue (value);
     }
 
-    void parameterChanged (const String&, float newValue) override
+    void parameterChanged (const String& parameterID, float newValue) override
     {
         updateValue (newValue);
     }
