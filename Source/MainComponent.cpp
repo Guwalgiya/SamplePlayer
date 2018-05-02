@@ -8,37 +8,37 @@
 #include <experimental/filesystem>
 
 class MainContentComponent : public  AudioAppComponent,
-							 public  ChangeListener,
-							 public  ToggleButton::Listener,
-	                         public  AudioTransportSource,
-							 private ComboBox::Listener,
-							 private MidiInputCallback,
-							 private MidiKeyboardStateListener
+	public  ChangeListener,
+	public  ToggleButton::Listener,
+	public  AudioTransportSource,
+	private ComboBox::Listener,
+	private MidiInputCallback,
+	private MidiKeyboardStateListener
 {
 public:
-	enum RadioButtonIds 
+	enum RadioButtonIds
 	{
 		XOR_realtion = 1001
 	};
 
-	int canvas_width  = 800;
+	int canvas_width = 800;
 	int canvas_length = 800;
-	int A4_midi       = 81;
-	int D4_midi       = 74;
-	int midi_chann    = 1;
-	int num_in_chann  = 0;
+	int A4_midi = 81;
+	int D4_midi = 74;
+	int midi_chann = 1;
+	int num_in_chann = 0;
 	int num_out_chann = 2;
 	int cent_c_octave = 3;
-	float defualt_fs  = 48000.00;
+	float defualt_fs = 48000.00;
 
 
 	MainContentComponent() : lastInputIndex(0),
-		                     state(Stopped),
-		                     isAddingFromMidiInput(false),
-		                     keyboardComponent(keyboardState, MidiKeyboardComponent::horizontalKeyboard),
-		                     A_string(canvas_width, Colours::red,  A4_midi),
-		                     D_string(canvas_width, Colours::blue, D4_midi),
-		                     processor()
+		state(Stopped),
+		isAddingFromMidiInput(false),
+		keyboardComponent(keyboardState, MidiKeyboardComponent::horizontalKeyboard),
+		A_string(canvas_width, Colours::red, A4_midi),
+		D_string(canvas_width, Colours::blue, D4_midi),
+		processor()
 	{
 		//=========================================================================================================================
 		//set up the GUI's basic components
@@ -58,14 +58,14 @@ public:
 
 		addAndMakeVisible(midiInputList);
 		midiInputList.setTextWhenNoChoicesAvailable("No MIDI Inputs Enabled");
-		
+
 
 		//=========================================================================================================================
 		//set up Piano
 		const StringArray midiInputs(MidiInput::getDevices());
 		midiInputList.addItemList(midiInputs, 1);
 		midiInputList.addListener(this);
-		
+
 		for (int i = 0; i < midiInputs.size(); i++)
 		{
 			if (deviceManager.isMidiInputEnabled(midiInputs[i]))
@@ -82,7 +82,7 @@ public:
 
 		addAndMakeVisible(keyboardComponent);
 		keyboardState.addListener(this);
-		
+
 		//set up ErHu
 		addAndMakeVisible(A_string);
 		addAndMakeVisible(D_string);
@@ -90,6 +90,10 @@ public:
 		addAndMakeVisible(scaleSlider);
 		addAndMakeVisible(scaleLabel_name);
 		scaleLabel_name.setText("Bowing Velocity: ", dontSendNotification);
+		addAndMakeVisible(distortionLabel);
+		addAndMakeVisible(distortionSlider);
+		addAndMakeVisible(distortionLabel_name);
+		distortionLabel_name.setText("Distortion", dontSendNotification);
 		midiInputList_Label.attachToComponent(&scaleLabel, true);
 
 		//message box at the bottom
@@ -101,8 +105,8 @@ public:
 		midiMessagesBox.setCaretVisible(false);
 		midiMessagesBox.setPopupMenuEnabled(true);
 		midiMessagesBox.setColour(TextEditor::backgroundColourId, Colours::black);
-		midiMessagesBox.setColour(TextEditor::outlineColourId,    Colours::white);
-		
+		midiMessagesBox.setColour(TextEditor::outlineColourId, Colours::white);
+
 		//=========================================================================================================================
 		//Flanger Setup
 		addAndMakeVisible(flanger);
@@ -112,7 +116,7 @@ public:
 
 		//=========================================================================================================================
 		//Audio setup
-		formatManager.registerBasicFormats();   
+		formatManager.registerBasicFormats();
 		AudioDeviceManager::AudioDeviceSetup deviceSetup = AudioDeviceManager::AudioDeviceSetup();
 		deviceSetup.sampleRate = defualt_fs;
 		transportSource.addChangeListener(this);
@@ -145,8 +149,26 @@ public:
 			bufferToFill.clearActiveBufferRegion();
 			return;
 		}
-
+		
 		transportSource.getNextAudioBlock(bufferToFill);
+		
+		//Carry out distortion on channel 0
+		if (distortionSlider.getValue()>0) {
+
+			auto* inBuffer = bufferToFill.buffer->getReadPointer(0,bufferToFill.startSample);
+			float* outBuffer = bufferToFill.buffer->getWritePointer(0, bufferToFill.startSample);
+			float **outBuffer = bufferToFill.buffer->getArrayOfReadPointers;
+
+			for (auto sample = 0; sample < bufferToFill.numSamples; ++sample)
+				outBuffer[sample] = inBuffer[sample]+  random.nextFloat() * distortionSlider.getValue();
+		}
+		auto flangerState = flanger.getState();
+		String stateString = flangerState ? "ON" : "OFF";
+		if (stateString == "ON") {
+			 MidiBuffer *m = new MidiBuffer();
+			 processor.processBlock(*bufferToFill.buffer,*m);
+		}
+		
 	}
 
 	//core function
@@ -185,6 +207,9 @@ public:
 		scaleLabel.setBounds(0, 90, getWidth() - 10, 40);
 		scaleLabel_name.setBounds(0, 60, getWidth() - 10, 40);
 		scaleSlider.setBounds(30, 90, getWidth() - 10, 40);
+		distortionLabel.setBounds(0, 550, getWidth() - 10, 40);
+		distortionLabel_name.setBounds(0, 520, getWidth() - 10, 40);
+		distortionSlider.setBounds(30, 550, getWidth() - 10, 40);
 		midiInputList.setBounds(150, 300, getWidth() - 300, 30);
 		midiMessagesBox.setBounds(150, 350, getWidth() - 200, 200);
 	}
@@ -235,7 +260,7 @@ private:
 		keyboardState.processNextMidiEvent(message);
 	}
 
-	String createInstrumentFileName(String technique, int midiNoteNumber) 
+	String createInstrumentFileName(String technique, int midiNoteNumber)
 	{
 		String midiName = MidiMessage::getMidiNoteName(midiNoteNumber, true, true, cent_c_octave);
 		return technique + "_" + midiName + ".wav";
@@ -332,18 +357,18 @@ private:
 			state = newState;
 			switch (state)
 			{
-			case Stopped:                           																									
+			case Stopped:
 				transportSource.setPosition(0.0);
 				break;
 
-			case Starting:                         													
+			case Starting:
 				transportSource.start();
 				break;
 
-			case Playing:                          								
+			case Playing:
 				break;
 
-			case Stopping:                          
+			case Stopping:
 				transportSource.stop();
 				break;
 			}
@@ -389,7 +414,7 @@ private:
 
 		playSound(stateString_bow, stateString_pluck, midiNoteNumber, velocity, "ErHu_Piano");
 	}
-	
+
 
 	void handleNoteOff(MidiKeyboardState*, int midiChannel, int midiNoteNumber, float /*velocity*/) override
 	{
@@ -421,7 +446,7 @@ private:
 		if (A_string.getBounds().contains(e.getPosition()))
 		{
 			auto position = (e.position.x - A_string.getX()) / A_string.getWidth();
-			A_string.stringPlucked(position);	
+			A_string.stringPlucked(position);
 
 			float relativePitch = e.position.x / (canvas_width / 13); //13 means an octave plus one extra note
 			playStrings(A_string.getMidi() + (int)relativePitch, scaleSlider.getValue());
@@ -438,7 +463,7 @@ private:
 
 	//Function for ErHu Strings
 	void playStrings(int midi_value, float velocity)
-	{   
+	{
 
 		String midiName = getMidiname(midi_value);
 		logMessage("New Midi Value - " + midiName);
@@ -456,17 +481,17 @@ private:
 	// Fundamental Components
 	int                lastInputIndex;
 	bool               isAddingFromMidiInput;
-	
+
 	//General GUI Components
 	ToggleButton          bow_button, pluck_button;
 	ComboBox              midiInputList;
-	Label                 midiInputList_Label; 
+	Label                 midiInputList_Label;
 	TextEditor            midiMessagesBox;
 	TextButton            flanger;
 
 	//ErHu Components
-	Label                 scaleLabel{ "Velocity: " }, scaleLabel_name;
-	Slider                scaleSlider;
+	Label                 scaleLabel{ "Velocity: " }, scaleLabel_name, distortionLabel{ "Distortion" }, distortionLabel_name;
+	Slider                scaleSlider, distortionSlider;
 	ErHuString            A_string, D_string;
 
 	//MIDI KeyBoard Components
@@ -484,6 +509,9 @@ private:
 	FlangerAudioProcessor processor;
 	Array<FlangerAudioProcessorEditor::SafePointer<FlangerAudioProcessorEditor>> window;
 	FlangerAudioProcessorEditor *flangerAudioProcessorEditor = new FlangerAudioProcessorEditor(processor);
+
+	//Audio Processing
+	Random random;
 	//==============================================================================
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainContentComponent);
 };
