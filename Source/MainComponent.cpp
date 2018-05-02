@@ -157,10 +157,10 @@ public:
 
 			auto* inBuffer = bufferToFill.buffer->getReadPointer(0,bufferToFill.startSample);
 			float* outBuffer = bufferToFill.buffer->getWritePointer(0, bufferToFill.startSample);
-			float **outBuffer = bufferToFill.buffer->getArrayOfReadPointers;
+			
 
 			for (auto sample = 0; sample < bufferToFill.numSamples; ++sample)
-				outBuffer[sample] = inBuffer[sample]+  random.nextFloat() * distortionSlider.getValue();
+				outBuffer[sample] = inBuffer[sample]+  inBuffer[sample]*random.nextFloat() * distortionSlider.getValue();
 		}
 		auto flangerState = flanger.getState();
 		String stateString = flangerState ? "ON" : "OFF";
